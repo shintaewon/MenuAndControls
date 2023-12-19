@@ -36,7 +36,13 @@ public:
 	CPoint m_mouse_pos;
 	CString m_mouse_event{"None"};
 	CString m_current_time;
+	//std::vector<CPoint> curve;
+	//CPoint Previous_;
 
+	BOOL m_bDrawMode; // 현재 그리기 모드인지를 판단할 때 사용한다.
+	CPoint m_ptStart, m_ptEnd;
+	std::vector<CPoint> m_curves;
+	std::vector<std::vector<CPoint>> m_savedCurves;
 	UINT m_keyboard = -1;
 
 	// 공 정보

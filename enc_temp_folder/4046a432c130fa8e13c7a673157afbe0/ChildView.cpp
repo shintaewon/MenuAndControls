@@ -245,13 +245,13 @@ afx_msg void CChildView::OnMyPaint(CDC* dc) { //여기서 그려
 	dc->TextOut(10, 70, _T("Keyboard: ") + CString(std::to_string(m_keyboard).c_str()));
 
 
-		for (const auto& curve : m_curves) {
-			const CPoint& start = curve[i-1];  // 시작점
-			const CPoint& end = curve[i];     // 끝점
+	for (const auto& curve : m_curves) {
+		const CPoint& start = curve[i-1];  // 시작점
+		const CPoint& end = curve[i];     // 끝점
 
-			dc->MoveTo(start);
-			dc->LineTo(end);
-		}
+		dc->MoveTo(start);
+		dc->LineTo(end);
+	}
 
 	// 튀기는 공 그리기
 	//Circle(dc, m_ball_pos, m_ball_radius, RGB(0, 255, 255));
