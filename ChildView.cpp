@@ -245,19 +245,31 @@ afx_msg void CChildView::OnMyPaint(CDC* dc) { //여기서 그려
 	dc->TextOut(10, 70, _T("Keyboard: ") + CString(std::to_string(m_keyboard).c_str()));
 
 
-		for (const auto& curve : m_curves) {
-			const CPoint& start = curve[i-1];  // 시작점
-			const CPoint& end = curve[i];     // 끝점
+	//for (const auto& curve : m_curves) {
+	//	for (size_t i = 1; i < curve.size(); ++i) {
+	//		const CPoint& start = curve[i - 1];  // 시작점
+	//		const CPoint& end = curve[i];        // 끝점
 
+	//		dc->MoveTo(start);
+	//		dc->LineTo(end);
+	//	}
+	//}
+
+	for (const auto& curve : m_savedCurves) {
+		for (size_t i = 1; i < curve.size(); i++) {
+			const CPoint& start = curve[i - 1];
+			const CPoint& end = curve[i];
 			dc->MoveTo(start);
 			dc->LineTo(end);
 		}
+
+	}
 
 	// 튀기는 공 그리기
 	//Circle(dc, m_ball_pos, m_ball_radius, RGB(0, 255, 255));
 
 	// 고무 벽 그리기
-	Rectangle(dc, m_wall_rect, RGB(255, 255, 0));
+	//Rectangle(dc, m_wall_rect, RGB(255, 255, 0));
 
 	// 직선 그리기
 	//Line(dc, {100, 100}, {200, 300});
@@ -389,10 +401,10 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point) {
 
 void CChildView::OnLButtonDown(UINT nFlags, CPoint point) {
 	
-	if (m_bDrawMode) {
+
 		// 그리기 모드에 진입한다.
+		//m_curves.clear();
 		m_bDrawMode = TRUE;
-	}
 	// 마우스 커서의 좌표를 저장한다.
 	m_ptStart = m_ptEnd = point;
 	m_mouse_event_listeners(kMouseLButtonDown, nFlags, point);
@@ -407,10 +419,15 @@ void CChildView::OnLButtonDown(UINT nFlags, CPoint point) {
 void CChildView::OnLButtonUp(UINT nFlags, CPoint point) {
 
 	if (m_bDrawMode) {
-		std::vector<CPoint> curve;
-		curve.push_back(m_ptStart);
-		curve.push_back(point);
-		m_curves.emplace_back(curve);
+		m_bDrawMode = FALSE;
+		m_savedCurves.push_back(m_curves); // 현재 그린 곡선을 저장
+		m_curves.clear();
+		// 현재 그린 곡선 초기화
+		//std::vector<CPoint> curve;
+		//curve.push_back(m_ptStart);
+		//curve.push_back(m);
+		//m_curves.emplace_back(m_ptStart);
+		//m_curves.emplace_back(point);
 	}
 	
 
