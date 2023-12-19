@@ -13,10 +13,24 @@
 
 #include "EventListener.h"
 
+struct Shape {
+	enum Type { Rectangle, Circle } type;
+	CPoint startPoint;
+	CPoint endPoint;
+
+	Shape(Type t, CPoint sp, CPoint ep) : type(t), startPoint(sp), endPoint(ep) {}
+};
+
 // CChildView 창
 
 class CChildView : public CWnd
 {
+private:
+	CPoint m_startPoint;
+	CPoint m_endPoint;
+	std::vector<Shape> m_shapes;
+	bool m_isDrawing;
+
 public:
 	CChildView();
 
@@ -63,7 +77,9 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
-	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg
+		int CalculateDistance(CPoint p1, CPoint p2);
+	int OnCreate(LPCREATESTRUCT lpCreateStruct);
 
 
 	enum TimerEvent {
@@ -104,8 +120,8 @@ public:
 	EventListener<MouseEvent, UINT, CPoint> m_mouse_event_listeners;
 
 	afx_msg void OnSelectArea();
-	afx_msg void OnDrawLine();
 	afx_msg void OnUpdateSelectarea(CCmdUI* pCmdUI);
+	afx_msg void OnDrawLine();
 	afx_msg void OnUpdateDrawLine(CCmdUI* pCmdUI);
 	afx_msg void OnRemoveSelected();
 	afx_msg void OnDrawRectangle();
@@ -116,6 +132,8 @@ public:
 	afx_msg void OnUpdateDrawCurve(CCmdUI* pCmdUI);
 
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	EventListener<UINT, UINT, UINT> m_keyboard_listeners;
+
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };
 
