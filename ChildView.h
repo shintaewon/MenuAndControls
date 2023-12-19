@@ -13,10 +13,24 @@
 
 #include "EventListener.h"
 
+struct Shape {
+	enum Type { Rectangle, Circle } type;
+	CPoint startPoint;
+	CPoint endPoint;
+
+	Shape(Type t, CPoint sp, CPoint ep) : type(t), startPoint(sp), endPoint(ep) {}
+};
+
 // CChildView 창
 
 class CChildView : public CWnd
 {
+private:
+	CPoint m_startPoint;
+	CPoint m_endPoint;
+	std::vector<Shape> m_shapes;
+	bool m_isDrawing;
+
 public:
 	CChildView();
 
@@ -63,7 +77,9 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
-	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg
+		int CalculateDistance(CPoint p1, CPoint p2);
+	int OnCreate(LPCREATESTRUCT lpCreateStruct);
 
 
 	enum TimerEvent {

@@ -149,10 +149,12 @@ void Polygon(CDC* dc,
 
 } // anonymous namespace
 
+
 // CChildView
 
 CChildView::CChildView()
 {
+	m_isDrawing = false;
 }
 
 CChildView::~CChildView()
@@ -226,6 +228,28 @@ void CChildView::OnPaint()
 
 	dc.BitBlt(0, 0, rect.Width(), rect.Height(), &memDC,
 						0, 0, SRCCOPY);
+
+	// 저장된 도형들을 그립니다.
+	for (const auto& shape : m_shapes) {
+		if (shape.type == Shape::Rectangle) {
+			dc.Rectangle(CRect(shape.startPoint, shape.endPoint));
+		}
+		else if (shape.type == Shape::Circle) {
+			CRect rect(shape.startPoint, shape.endPoint);
+			dc.Ellipse(rect);
+		}
+	}
+
+	// 현재 그려지고 있는 도형을 그립니다.
+	if (m_isDrawing) {
+		if (m_toolbar_mode == kToolbarDrawRectangle) {
+			dc.Rectangle(CRect(m_startPoint, m_endPoint));
+		}
+		else if (m_toolbar_mode == kToolbarDrawCircle) {
+			CRect rect(m_startPoint, m_endPoint);
+			dc.Ellipse(rect);
+		}
+	}
 }
 
 afx_msg void CChildView::OnMyPaint(CDC* dc) {
@@ -294,6 +318,56 @@ void CChildView::CalculateBall() {
 		}
 	}
 
+	// 도형과의 충돌 검사
+	for (const auto& shape : m_shapes) {
+		if (shape.type == Shape::Rectangle) {
+			CRect rect(shape.startPoint, shape.endPoint);
+			CRect ballRect(m_ball_pos.x - m_ball_radius, m_ball_pos.y - m_ball_radius,
+				m_ball_pos.x + m_ball_radius, m_ball_pos.y + m_ball_radius);
+
+			if (ballRect.IntersectRect(ballRect, rect)) {
+				// 공이 수평 방향에서 오는 경우 (왼쪽 또는 오른쪽 충돌)
+				if (m_ball_velocity.x > 0 && m_ball_pos.x - m_ball_radius < rect.right ||
+					m_ball_velocity.x < 0 && m_ball_pos.x + m_ball_radius > rect.left) {
+					m_ball_velocity.x = -m_ball_velocity.x; // 수평 방향 반전
+				}
+
+				// 공이 수직 방향에서 오는 경우 (위 또는 아래 충돌)
+				if (m_ball_velocity.y > 0 && m_ball_pos.y - m_ball_radius < rect.bottom ||
+					m_ball_velocity.y < 0 && m_ball_pos.y + m_ball_radius > rect.top) {
+					m_ball_velocity.y = -m_ball_velocity.y; // 수직 방향 반전
+				}
+			}
+		}
+
+
+
+
+		else if (shape.type == Shape::Circle) {
+			CPoint center = shape.startPoint;
+			int radius = CalculateDistance(center, shape.endPoint);
+			int distance = CalculateDistance(center, m_ball_pos);
+
+			if (distance <= radius + m_ball_radius) {
+				// 법선 벡터 계산
+				CPoint normal = CPoint(center.x - m_ball_pos.x, center.y - m_ball_pos.y);
+				float magnitude = sqrt(pow(normal.x, 2) + pow(normal.y, 2));
+				normal.x /= magnitude;
+				normal.y /= magnitude;
+
+				// 반사 벡터 계산
+				float dotProduct = m_ball_velocity.x * normal.x + m_ball_velocity.y * normal.y;
+				m_ball_velocity.x -= 2 * normal.x * dotProduct;
+				m_ball_velocity.y -= 2 * normal.y * dotProduct;
+
+				break;
+			}
+		}
+
+
+
+	}
+
 	// 고무벽과 충돌했는지 검사 (rough)
 	CRect collision;
 	if (collision.IntersectRect(CRect(m_ball_pos, SIZE{ m_ball_radius, m_ball_radius }), m_wall_rect)) {
@@ -310,6 +384,10 @@ void CChildView::CalculateBall() {
 	}
 }
 
+// 두 점 간의 거리 계산 함수
+int CChildView::CalculateDistance(CPoint p1, CPoint p2) {
+	return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
 
 int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -358,24 +436,48 @@ int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 }
 
 void CChildView::OnMouseMove(UINT nFlags, CPoint point) {
+	if (m_isDrawing) {
+		m_endPoint = point;
+		Invalidate(); // 화면을 다시 그립니다.
+	}
 	m_mouse_event_listeners(kMouseMove, nFlags, point);
 	CWnd::Invalidate();
 	CWnd::OnMouseMove(nFlags, point);
 }
 
 void CChildView::OnLButtonDown(UINT nFlags, CPoint point) {
+	if (m_toolbar_mode == kToolbarDrawRectangle || m_toolbar_mode == kToolbarDrawCircle) {
+		m_startPoint = point;
+		m_isDrawing = true;
+	}
 	m_mouse_event_listeners(kMouseLButtonDown, nFlags, point);
 	CWnd::SetCapture();
 	CWnd::Invalidate();
 	CWnd::OnLButtonDown(nFlags, point);
 }
 
-void CChildView::OnLButtonUp(UINT nFlags, CPoint point) {
+void CChildView::OnLButtonUp(UINT nFlags, CPoint point)
+{
 	m_mouse_event_listeners(kMouseLButtonUp, nFlags, point);
 	ReleaseCapture();
 	CWnd::Invalidate();
+
+	if (m_isDrawing) {
+		m_endPoint = point;
+		m_isDrawing = false;
+
+		if (m_toolbar_mode == kToolbarDrawRectangle) {
+			m_shapes.emplace_back(Shape::Rectangle, m_startPoint, m_endPoint);
+		}
+		else if (m_toolbar_mode == kToolbarDrawCircle) {
+			m_shapes.emplace_back(Shape::Circle, m_startPoint, m_endPoint);
+		}
+
+		Invalidate(); // 화면을 다시 그립니다.
+	}
 	CWnd::OnLButtonUp(nFlags, point);
 }
+
 
 void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point) {
 	m_mouse_event_listeners(kMouseLButtonDblClk, nFlags, point);
