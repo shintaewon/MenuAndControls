@@ -17,12 +17,15 @@
 #define new DEBUG_NEW
 #endif
 
+
+enum class Shape { Rectangle, Circle };
+Shape m_currentShape = Shape::Rectangle;
+
 namespace {
 
 CString GetSystemTimeAndDate() {
 	return CTime::GetCurrentTime().Format("%Y-%m-%d %H:%M:%S");
 }
-
 
 /*
 \brief: 원을 그립니다
@@ -35,9 +38,7 @@ CString GetSystemTimeAndDate() {
 \thickness: 테두리 두께
 \color_line: 테두리의 색
 */
-void Circle(CDC* dc,
-						CPoint center, int radius, COLORREF color,
-						int thickness = 1, COLORREF color_line = RGB(0, 0, 0))
+void Circle(CDC* dc, CPoint center, int radius, COLORREF color, int thickness = 1, COLORREF color_line = RGB(0, 0, 0))
 {
   // 새로운 펜 객체 사용
 	CPen pen(thickness <= 0 ? PS_NULL : PS_SOLID, thickness, color_line);
@@ -48,8 +49,7 @@ void Circle(CDC* dc,
 	CBrush* prev_brush = dc->SelectObject(&brush);
 
 	// 원(타원) 그리기
-	dc->Ellipse(center.x - radius, center.y - radius,
-							center.x + radius, center.y + radius);
+	dc->Ellipse(center.x - radius, center.y - radius, center.x + radius, center.y + radius);
 
 	// 사용하는 펜과 객체 도구를 원래대로 되돌리기
 	dc->SelectObject(prev_brush);
@@ -66,9 +66,7 @@ void Circle(CDC* dc,
 \thickness: 테두리 두께
 \color_line: 테두리의 색
 */
-void Rectangle(CDC* dc,
-							 CRect rect, COLORREF color,
-							 int thickness = 1, COLORREF color_line = RGB(0, 0, 0)) {
+void Rectangle(CDC* dc, CRect rect, COLORREF color, int thickness = 1, COLORREF color_line = RGB(0, 0, 0)) {
 	CPen pen(thickness <= 0 ? PS_NULL : PS_SOLID, thickness, color_line);
 	auto pen_prev = dc->SelectObject(&pen);
 
@@ -228,14 +226,14 @@ void CChildView::OnPaint()
 						0, 0, SRCCOPY);
 }
 
+std::vector<CRect> m_rectangles;
+
 afx_msg void CChildView::OnMyPaint(CDC* dc) {
 	// 현재 시간 표시
 	dc->TextOutW(10, 10, m_current_time);
 
 	// 마우스 위치 표시
-	std::string pos =
-		"(" + std::to_string(m_mouse_pos.x) + ", "
-		+ std::to_string(m_mouse_pos.y) + ")";
+	std::string pos = "(" + std::to_string(m_mouse_pos.x) + ", " + std::to_string(m_mouse_pos.y) + ")";
 	dc->TextOut(10, 30, CString(pos.c_str()));
 
 	// 마우스 이벤트 표시
@@ -255,6 +253,40 @@ afx_msg void CChildView::OnMyPaint(CDC* dc) {
 
 	// 폴리곤 그리기
 	Polygon(dc, {{300, 100}, {300, 50}, {250, 75}, {250, 100}}, RGB(255, 0, 255));
+
+	//// making jiwhan
+	//for (const auto& rect : m_rectangles) {
+	//	dc->Rectangle(rect);
+	//}
+
+	//if (m_isDrawing) {
+	//	dc->Rectangle(CRect(m_startPoint, m_endPoint));
+	//}
+	// 
+	//// making jiwhan
+	switch (m_currentShape) {
+		case Shape::Rectangle:
+			for (const auto& rect : m_rectangles) {
+				dc->Rectangle(rect);
+			}
+
+			if (m_isDrawing) {
+				dc->Rectangle(CRect(m_startPoint, m_endPoint));
+			}
+			break;
+		case Shape::Circle:
+			for (const auto& circle : m_circles) {
+				dc->Ellipse(CRect(circle.center.x - circle.radius, circle.center.y - circle.radius,
+					circle.center.x + circle.radius, circle.center.y + circle.radius));
+			}
+
+			if (m_isDrawing) {
+				CPoint center((m_startPoint.x + m_endPoint.x) / 2, (m_startPoint.y + m_endPoint.y) / 2);
+				int radius = (int)sqrt(pow(m_startPoint.x - m_endPoint.x, 2) + pow(m_startPoint.y - m_endPoint.y, 2)) / 2;
+				dc->Ellipse(CRect(center.x - radius, center.y - radius, center.x + radius, center.y + radius));
+			}
+			break;
+		}
 }
 
 void CChildView::OnContextMenu(CWnd* pWnd, CPoint point)
@@ -364,6 +396,12 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point) {
 	m_mouse_event_listeners(kMouseMove, nFlags, point);
 	CWnd::Invalidate();
 	CWnd::OnMouseMove(nFlags, point);
+
+	if (nFlags & MK_LBUTTON && m_isDrawing) {
+		m_endPoint = point;
+		CWnd::Invalidate();
+	}
+	CWnd::OnMouseMove(nFlags, point);
 }
 
 void CChildView::OnLButtonDown(UINT nFlags, CPoint point) {
@@ -371,6 +409,15 @@ void CChildView::OnLButtonDown(UINT nFlags, CPoint point) {
 	CWnd::SetCapture();
 	CWnd::Invalidate();
 	CWnd::OnLButtonDown(nFlags, point);
+
+	// making jiwhan
+	m_startPoint = point;
+	m_endPoint = point;
+	m_isDrawing = true;
+	CWnd::Invalidate();
+	CWnd::OnLButtonDown(nFlags, point);
+	// making jiwhan
+
 }
 
 void CChildView::OnLButtonUp(UINT nFlags, CPoint point) {
@@ -378,6 +425,29 @@ void CChildView::OnLButtonUp(UINT nFlags, CPoint point) {
 	ReleaseCapture();
 	CWnd::Invalidate();
 	CWnd::OnLButtonUp(nFlags, point);
+
+	// making jiwhan
+	/*if (m_isDrawing) {
+		m_endPoint = point;
+		m_isDrawing = false;
+		m_rectangles.push_back(CRect(m_startPoint, m_endPoint));
+		CWnd::Invalidate();
+	}
+	CWnd::OnLButtonUp(nFlags, point);*/
+
+	/*if (m_isDrawing) {
+		m_endPoint = point;
+		m_isDrawing = false;
+
+		CPoint center((m_startPoint.x + m_endPoint.x) / 2, (m_startPoint.y + m_endPoint.y) / 2);
+		int radius = (int)sqrt(pow(m_startPoint.x - m_endPoint.x, 2) + pow(m_startPoint.y - m_endPoint.y, 2)) / 2;
+		m_circles.push_back({ center, radius });
+
+		CWnd::Invalidate();
+	}
+	CWnd::OnLButtonUp(nFlags, point);*/
+	// making jiwhan
+
 }
 
 void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point) {
@@ -476,6 +546,7 @@ void CChildView::OnRemoveSelected() {
 
 void CChildView::OnDrawRectangle() {
 	m_toolbar_mode = (m_toolbar_mode == kToolbarDrawRectangle ? kToolbarNone : kToolbarDrawRectangle);
+	OnShapeRectangle();
 }
 void CChildView::OnUpdateDrawRectangle(CCmdUI* pCmdUI) {
 	pCmdUI->SetCheck(m_toolbar_mode == kToolbarDrawRectangle);
@@ -484,6 +555,7 @@ void CChildView::OnUpdateDrawRectangle(CCmdUI* pCmdUI) {
 
 void CChildView::OnDrawCircle() {
 	m_toolbar_mode = (m_toolbar_mode == kToolbarDrawCircle? kToolbarNone : kToolbarDrawCircle);
+	OnShapeCircle();
 }
 void CChildView::OnUpdateDrawCircle(CCmdUI* pCmdUI) {
 	pCmdUI->SetCheck(m_toolbar_mode == kToolbarDrawCircle);
@@ -493,4 +565,13 @@ void CChildView::OnUpdateDrawCircle(CCmdUI* pCmdUI) {
 BOOL CChildView::OnEraseBkgnd(CDC* pDC) {
 	return TRUE;
 	// return CWnd::OnEraseBkgnd(pDC);
+}
+
+
+void CChildView::OnShapeRectangle() {
+	m_currentShape = Shape::Rectangle;
+}
+
+void CChildView::OnShapeCircle() {
+	m_currentShape = Shape::Circle;
 }

@@ -13,10 +13,17 @@
 
 #include "EventListener.h"
 
+
+
 // CChildView 창
 
 class CChildView : public CWnd
 {
+	struct circle {
+		CPoint center;
+		int radius;
+	};
+
 public:
 	CChildView();
 
@@ -29,6 +36,11 @@ public:
 		kToolbarDrawRectangle,
 		kToolbarDrawCircle,
 	};
+
+	// make jiwhan -----------------------------------
+	enum class Shape { Rectangle, Circle };
+	Shape m_currentShape = Shape::Rectangle;
+	// make jiwhan -----------------------------------
 
 	ToolbarMode m_toolbar_mode = kToolbarNone;
 
@@ -48,6 +60,16 @@ public:
 	CRect m_wall_rect{CPoint{}, CSize{20, 200}};
 
 	void CalculateBall();
+
+
+	// make jiwhan -----------------------------------
+	CPoint m_startPoint;
+	CPoint m_endPoint;
+	bool m_isDrawing = false;
+
+	std::vector<CRect> m_rectangles;
+	std::vector<circle> m_circles;
+	// make jiwhan -----------------------------------
 
 public:
 
@@ -117,5 +139,9 @@ public:
 
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+
+	afx_msg void OnShapeRectangle();
+	afx_msg void OnShapeCircle();
+
 };
 
